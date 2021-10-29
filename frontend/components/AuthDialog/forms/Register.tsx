@@ -1,9 +1,15 @@
-import React from 'react';
+import React, {useState} from 'react';
+import { setCookie } from 'nookies';
 import { Button } from '@material-ui/core';
 import { useForm, FormProvider } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { RegisterFormSchema } from '../../../utils/validations';
 import { FormField } from '../../FormField';
+import {UserApi} from "../../../utils/api";
+import {CreateUserDto} from "../../../utils/api/types";
+import {Alert} from "@material-ui/lab";
+import {useAppDispatch} from "../../../redux/hooks";
+import {setUserData} from "../../../redux/slices/user";
 
 interface LoginFormProps {
   onOpenRegister: () => void;
@@ -11,23 +17,43 @@ interface LoginFormProps {
 }
 
 export const RegisterForm: React.FC<LoginFormProps> = ({ onOpenRegister, onOpenLogin }) => {
+  const dispatch = useAppDispatch();
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const form = useForm({
     mode: 'onChange',
     resolver: yupResolver(RegisterFormSchema),
   });
 
-  const onSubmit = (data) => console.log(data);
+  const onSubmit = async (dto: CreateUserDto) => {
+    try {
+      const data = await UserApi.register(dto);
+      setCookie(null, 'rtoken', data.token, {
+        maxAge: 30 * 24 * 60 * 60,
+        path: '/'
+      })
+      setErrorMessage('');
+      dispatch(setUserData(data));
+    } catch (err) {
+      console.warn(err);
+      if (err.response) {
+        setErrorMessage(err.response.data.message)
+      }
+    }
+  };
 
   return (
     <div>
       <FormProvider {...form}>
-        <FormField name="fullname" label="Имя и фамилия" />
+        <FormField name="fullName" label="Имя и фамилия" />
         <FormField name="email" label="Почта" />
         <FormField name="password" label="Пароль" />
+        {errorMessage && <Alert severity={'error'} className={'mb-20'}>
+          {errorMessage}
+        </Alert>}
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="d-flex align-center justify-between">
             <Button
-              disabled={!form.formState.isValid}
+              disabled={!form.formState.isValid || form.formState.isSubmitting}
               onClick={onOpenRegister}
               type="submit"
               color="primary"
