@@ -1,37 +1,44 @@
 import { Post } from '../components/Post';
 import { MainLayout } from '../layouts/MainLayout';
-import {GetServerSideProps} from 'next';
-import {wrapper} from '../redux/store';
-import {parseCookies} from 'nookies';
-import {UserApi} from '../utils/api';
-import {setUserData} from '../redux/slices/user';
+import {Api} from '../utils/api';
+import { PostItem } from '../utils/api/types';
+import {NextPage} from 'next';
 
-export default function Home() {
-  return (
-    <MainLayout>
-      <Post />
-      <Post />
-      <Post />
-      <Post />
-      <Post />
-      <Post />
-    </MainLayout>
-  );
+interface HomeProps {
+    posts: PostItem[];
 }
 
-export const getServerSideProps: GetServerSideProps = wrapper.getServerSideProps(store => async ctx => {
+const Home: NextPage<HomeProps> = ({posts}) => {
+    return (
+        <MainLayout>
+            {posts && posts.map(post =>
+                <Post
+                    key={post.id}
+                    title={post.title}
+                    id={post.id}
+                    description={post.description}
+                    imageUrl={''}
+                />)}
+        </MainLayout>
+    );
+}
+
+export const getServerSideProps = async ctx => {
     try {
-        const { rtoken } = parseCookies(ctx);
-        const userData = await UserApi.getMe(rtoken);
-        store.dispatch(setUserData(userData))
+        const posts = await Api().post.getAll();
         return {
-            props: {}
+            props: {
+                posts
+            }
         }
-    } catch (err) {
-        console.warn(err);
-        return {
-            props: {}
+    } catch (e) {
+        console.warn(e)
+    }
+    return {
+        props: {
+            posts: null
         }
     }
+};
 
-});
+export default Home;

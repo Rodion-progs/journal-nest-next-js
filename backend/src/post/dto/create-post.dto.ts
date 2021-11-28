@@ -1,11 +1,22 @@
-import {IsNotEmpty} from "class-validator";
+import {IsArray, IsNotEmpty, IsOptional, IsString} from "class-validator";
+
+
+export type OutputBlockData = {
+    id?: string;
+    type: string;
+    data: any
+}
 
 export class CreatePostDto {
     @IsNotEmpty()
+    @IsString()
     title: string;
 
     @IsNotEmpty()
-    body: string;
-
+    @IsArray()
+    body: OutputBlockData[];
+    
+    @IsOptional()
+    @IsArray()
     tags: string;
 }

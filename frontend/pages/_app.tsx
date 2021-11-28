@@ -7,7 +7,11 @@ import { theme } from '../theme';
 
 import '../styles/globals.scss';
 import 'macro-css';
-import {store, wrapper} from "../redux/store";
+import { wrapper} from "../redux/store";
+import {setUserData} from '../redux/slices/user';
+import {Component} from 'react';
+import {Api} from '../utils/api';
+import {getLocalFileName} from 'next/dist/build/webpack/plugins/webpack-conformance-plugin/utils/file-utils';
 
 function App({ Component, pageProps }) {
   return (
@@ -30,5 +34,20 @@ function App({ Component, pageProps }) {
     </>
   );
 }
+
+App.getInitialProps = wrapper.getInitialAppProps(store => async ({ ctx, Component}) => {
+    try {
+        const userData = await Api(ctx).user.getMe();
+        store.dispatch(setUserData(userData))
+    } catch (err) {
+        // console.warn(err);
+    }
+
+    return {
+        pageProps: {
+            ...(Component.getInitialProps ? await  Component.getInitialProps({ ...ctx, store }) : {}),
+        }
+    }
+});
 
 export default wrapper.withRedux(App);
